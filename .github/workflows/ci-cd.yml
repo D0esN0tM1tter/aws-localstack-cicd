@@ -1,0 +1,42 @@
+# define the title of the workflow
+name: AWS LocalStack CI/CD
+
+# define the git branch on which the code will be pushed
+on:
+  push:
+    branches: 
+      - master
+
+jobs:
+
+  build-deploy-test: 
+    runs-on: ubuntu-latest
+
+    services:
+      docker:
+        image: docker:20.10.16
+        options: --priviledged
+    
+    steps: 
+      - uses: actions/checkout@v3
+
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Build Docker Images
+        uses: docker-compose build
+      
+      - name: Start LocalStack 
+        uses: docker-compose up -d aws-localstack
+
+      - name: Start the Flask API 
+        uses: docker-compose up -d flask-api
+      
+      - name: Test API
+        run : |
+          sleep 10 # wait for containers
+          curl -X POST -H "Content-Type: application/json" -d '{"task":"Buy milk"}' http://localhost:5000/todos
+          curl http://localhost:5000/todos
+          
+          
+      
